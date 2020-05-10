@@ -1,0 +1,238 @@
+<html>
+
+<head>
+    <script src="https://d3js.org/d3.v5.js" charset="utf-8"></script>
+    <script>
+        // Data ---------------------------------------------------------------
+
+        let currentQuestionIndex = -1;
+        let currentQuestions = [];
+        let currentHorsePosition = 0;
+        let gameStarted = false;
+        let horseCreated = false;
+
+
+        // Actions ------------------------------------------------------------
+
+        // Advances to first question.
+        function startgame() {
+            let answer_button;
+            if (!gameStarted) {
+                answer_button = d3.select("#actions").append("button");
+                answer_button.attr("id", "submitanswer");
+                answer_button.text("Submit Answer");
+                // answer_button.on("click", answerquestion);
+                answer_button.attr("onclick", "answerquestion()");
+
+                gameStarted = true;
+            }
+
+            d3.select("#endGameMessage").html("")
+            d3.select("#intro").remove()
+
+            if (!horseCreated) {
+                const horseTag = d3.select("#horse");
+                const horseImg = horseTag.append("img");
+                horseImg.attr("id", "horseImg");
+                horseImg.attr("src", "/pack_horse_small.jpg");
+                horseImg.style("width", 100).style("height", "auto");
+                horseImg.style("position", "absolute");
+                horseImg.style("bottom", 0);
+                horseImg.style("left", 0);
+
+                horseCreated = true;
+            }
+
+
+            // Load some questions from a cool trivia api server.
+            d3.json("https://opentdb.com/api.php?amount=10&category=17&difficulty=medium&type=multiple")
+                .then(data => {
+                    currentQuestions = data.results;
+                    currentQuestionIndex = 0;
+                    currentHorsePosition = 0;
+
+                    drawquestion(currentQuestions[0]);
+                    drawhorse();
+                    updatehungermeter();
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        // Advances to next question, or to end of game and also updates horse position.
+        function answerquestion() {
+            console.log("Called answerquestion()");
+
+            // Check answer.
+            // If correct, display alert("Correct!"), load next question, Advance horse.
+            // If incorrect, display alert("Incorrect! Correct answer was: " + ), load next question.
+
+
+            const answersTag = d3.select("#answers");
+            const currentAnswer = answersTag.select('input:checked').node().value;
+            const currentQuestion = currentQuestions[currentQuestionIndex];
+            console.log("Current Answer:", currentAnswer);
+            if (currentAnswer === currentQuestion.correct_answer) {
+                alert("Correct Answer!");
+                currentHorsePosition = currentHorsePosition + 1;
+            } else {
+                alert("Incorrect Answer! Should have been: " + currentQuestion.correct_answer);
+            }
+            currentQuestionIndex = currentQuestionIndex + 1
+            if (currentQuestionIndex >= currentQuestions.length) {
+                drawendgame();
+            } else {
+                drawquestion(currentQuestions[currentQuestionIndex]);
+                drawhorse();
+                updatehungermeter();
+            }
+        }
+
+
+        // Helpers ------------------------------------------------------------
+
+        function drawquestion(questionData) {
+            console.log(questionData);
+
+            // Change the question text.
+            const questionTag = d3.select("#question");
+            questionTag.html(questionData.question);
+
+            // Shuffle available answers.
+            const answers = [questionData.correct_answer, ...questionData.incorrect_answers];
+            const shuffled_answers = shuffle(answers);
+
+            // Change the answer inputs.
+            const answersTag = d3.select("#answers");
+            const answer_inputs = answersTag.selectAll(".answer-container");
+            answer_inputs.data(shuffled_answers).join(
+                enter => {
+                    const answer_container = enter.append("div");
+                    const answer_input = answer_container.append("input");
+                    const answer_label = answer_container.append("label");
+
+                    answer_container.classed("answer-container", true);
+
+                    answer_input.attr("id", answer => answer);
+                    answer_input.attr("type", "radio");
+                    answer_input.attr("name", "question");
+                    answer_input.attr("value", answer => answer);
+
+                    answer_label.attr("for", answer => answer);
+                    answer_label.html(answer => answer);
+
+                    return answer_container;
+                },
+                update => {
+                    const answer_input = update.select("input");
+                    const answer_label = update.select("label");
+
+                    answer_input.attr("id", answer => answer);
+                    answer_input.attr("type", "radio");
+                    answer_input.attr("name", "question");
+                    answer_input.attr("value", answer => answer);
+                    answer_input.property("checked", false);
+
+                    answer_label.attr("for", answer => answer);
+                    answer_label.html(answer => answer);
+
+                    return update;
+                },
+                exit => exit.remove(),
+            );
+
+            // Change the answer labels.
+        }
+
+        function drawhorse() {
+            const horseTag = d3.select("#horse");
+            const horseImg = horseTag.select("#horseImg");
+
+            // Update the position of the horse.
+            horseImg.style("left", currentHorsePosition * 100);
+        }
+
+        function updatehungermeter() {
+            const hungerMeter = d3.select("#hunger_meter");
+            hungerMeter.style("width", (currentQuestionIndex * (900 / 10)) || 5);
+        }
+
+        function drawendgame() {
+            // Clear questions/answers.
+            d3.select("#question").html("");
+            d3.selectAll("#answers > *").remove();
+            d3.select("#submitanswer").remove();
+            gameStarted = false;
+            if (currentHorsePosition == 7)
+            {
+                d3.select("#endGameMessage").html("Congratulations! You made it to the end just in time")
+                d3.select("#endGameMessage").append("br")
+                const newImg = d3.select("#endGameMessage").append("img");
+                newImg.attr("src", "/eating_horse.jpg")
+                newImg.style("width", 416)
+                newImg.style("height", "auto")
+            }
+            else if (currentHorsePosition < 7)
+            {
+                d3.select("#endGameMessage").html("Whomp whomp :(  Your horse is still hungry")
+                d3.select("#endGameMessage").append("br")
+                const newImg = d3.select("#endGameMessage").append("img");
+                newImg.attr("src", "/hungry_horse.jpg")
+                newImg.style("width", 416)
+                newImg.style("height", "auto")
+            }
+            else 
+            {
+                d3.select("#endGameMessage").html("Wow! You are a superstar! Your horse loves you")
+                d3.select("#endGameMessage").append("br")
+                const newImg = d3.select("#endGameMessage").append("img");
+                newImg.attr("src", "/eating_horse.jpg")
+                newImg.style("width", 416)
+                newImg.style("height", "auto")
+            }
+        }
+
+        
+        // HACKS BEWARE -------------------------------------------------------
+
+        function shuffle(array) {
+            return array.sort((a, b) => 0.5 - Math.random());
+        }
+    </script>
+</head>
+
+<body>
+    <div id="intro">
+        Hi There! <br>
+        <h1><b>Welcome to Hungry Hungry Horse</b></h1><br>
+        Your goal is to answer at least 8 questions correctly to get your horse to food.<br>
+        Have Fun!<br>
+        <br>
+        <img src="/pack_horse.jpg" style="width: 652 ; height: 488;">
+    </div>
+    <div id="question">
+    </div>
+    <div id="answers">
+    </div>
+    <div id="actions">
+        <button id="startgame" type="button" onclick="startgame()">
+            Start New Game
+        </button>
+
+    </div>
+    <div id="endGameMessage">
+
+    </div>
+    <div id="horse" style="width: 900px; border-style: none none solid none; border-color: brown; position: relative; height: 100px;">
+        <img src="/grass.jpg" style="width: 100px; height: auto; position: absolute; bottom: 0; right: 0;">
+    </div>
+    
+    <br>
+    <h5 style= "color: black;">Hunger Meter</h5>
+    <div id="hunger_meter" style="width: 5px; height: 50px; background-color: crimson;">
+    </div>
+</body>
+
+
+</html>

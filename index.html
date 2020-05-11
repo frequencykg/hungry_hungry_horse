@@ -33,7 +33,7 @@
                 const horseTag = d3.select("#horse");
                 const horseImg = horseTag.append("img");
                 horseImg.attr("id", "horseImg");
-                horseImg.attr("src", "/pack_horse_small.jpg");
+                horseImg.attr("src", "./pack_horse_small.jpg");
                 horseImg.style("width", 100).style("height", "auto");
                 horseImg.style("position", "absolute");
                 horseImg.style("bottom", 0);
@@ -168,7 +168,7 @@
                 d3.select("#endGameMessage").html("Congratulations! You made it to the end just in time")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
-                newImg.attr("src", "/eating_horse.jpg")
+                newImg.attr("src", "./eating_horse.jpg")
                 newImg.style("width", 416)
                 newImg.style("height", "auto")
             }
@@ -177,7 +177,7 @@
                 d3.select("#endGameMessage").html("Whomp whomp :(  Your horse is still hungry")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
-                newImg.attr("src", "/hungry_horse.jpg")
+                newImg.attr("src", "./hungry_horse.jpg")
                 newImg.style("width", 416)
                 newImg.style("height", "auto")
             }
@@ -186,7 +186,7 @@
                 d3.select("#endGameMessage").html("Wow! You are a superstar! Your horse loves you")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
-                newImg.attr("src", "/eating_horse.jpg")
+                newImg.attr("src", "./eating_horse.jpg")
                 newImg.style("width", 416)
                 newImg.style("height", "auto")
             }
@@ -208,7 +208,7 @@
         Your goal is to answer at least 8 questions correctly to get your horse to food.<br>
         Have Fun!<br>
         <br>
-        <img src="/pack_horse.jpg" style="width: 652 ; height: 488;">
+        <img src="./pack_horse.jpg" style="width: 652 ; height: 488;">
     </div>
     <div id="question">
     </div>
@@ -224,7 +224,7 @@
 
     </div>
     <div id="horse" style="width: 900px; border-style: none none solid none; border-color: brown; position: relative; height: 100px;">
-        <img src="/grass.jpg" style="width: 100px; height: auto; position: absolute; bottom: 0; right: 0;">
+        <img src="./grass.jpg" style="width: 100px; height: auto; position: absolute; bottom: 0; right: 0;">
     </div>
     
     <br>

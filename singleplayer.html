@@ -2,116 +2,20 @@
 
 <head>
     <script src="https://d3js.org/d3.v5.js" charset="utf-8"></script>
-    <script src="https://unpkg.com/peerjs@1.0.0/dist/peerjs.min.js"></script>
     <script>
         // Data ---------------------------------------------------------------
 
         let currentQuestionIndex = -1;
         let currentQuestions = [];
         let currentHorsePosition = 0;
-        let currentPeerHorsePosition = 0;
         let gameStarted = false;
         let horseCreated = false;
-        let currentPeerConn = null;
-        let yourId = null;
-        let peerId = null;
-        
+
 
         // Actions ------------------------------------------------------------
 
-        // Example action:
-        // {
-        //     type: "move-horse",
-        //     horsePositions: {
-        //         "3i2oj4pio5p23i45": 6,
-        //         "0987sdfgpoi3j450": 3
-        //     }
-        // }
-        // {
-        //     type: "start-game"
-        // }
-        // {
-        //     type: "restart-game"
-        // }
-        function handleAction(data) {
-            const action = JSON.parse(data);
-            switch (action.type) {
-                case "move-horse": {
-                    const remotePeerHorsePosition = action.horsePositions[peerId];
-                    const remoteYourHorsePosition = action.horsePositions[yourId];
-
-                    currentPeerHorsePosition = Math.max(remotePeerHorsePosition, currentPeerHorsePosition);
-                    drawPeerHorse()
-                    // We just received a "move-horse" action from the connected peer...
-                    break;
-                }
-                case "start-game": {
-                    startgame(true)
-                    // We just received a "start-game" action from the connected peer...
-                    break;
-                }
-                case "restart-game": {
-                    startgame(true)
-                    // We just received a "restart-game" action from the connected peer...
-                    break;
-                }
-                default: {
-                    console.error('Received an unrecognized action type', action);
-                    break;
-                }
-            }
-            // Start game
-            // Restart game
-            // Move horse
-        }
-
-        //connect to your peer
-        const peer = new Peer();
-        peer.on('open', function (id) {
-            console.log('My peer ID is: ' + id);
-            d3.select("#yourId").text(id)
-            yourId = id
-        });
-        peer.on('connection', function (conn) {
-            // Someone has connected to us! Register appropriate callbacks here:
-
-            // Save the connection so we can send messages to the connected friend.
-            peerId = conn.peer;
-            currentPeerConn = conn;
-
-            d3.select("#currentPeerId").text(peerId);
-
-            // When someone sends us data, run the following function:
-            conn.on('data', function (data) {
-                console.log('Received remote action from peer', data);
-                handleAction(data);
-            });
-        });
-
-        function connectPeer() {
-            const peerIdSelection = d3.select("#peerId");
-            peerId = peerIdSelection.property("value");
-            d3.select("#currentPeerId").text(peerId);
-            console.log(peerId);
-
-            var conn = peer.connect(peerId);
-            // on open will be launch when you successfully connect to PeerServer
-            conn.on('open', function () {
-                // We have connected to someone! Register appropriate callbacks here:
-
-                // Save the connection so we can send messages to the connected friend.
-                currentPeerConn = conn;
-
-                // When someone sends us data, run the following function:
-                conn.on('data', function (data) {
-                    console.log('Received remote action from peer', data);
-                    handleAction(data);
-                });
-            });
-        }
-
         // Advances to first question.
-        function startgame(isRemote) {
+        function startgame() {
             let answer_button;
             if (!gameStarted) {
                 answer_button = d3.select("#actions").append("button");
@@ -135,28 +39,7 @@
                 horseImg.style("bottom", 0);
                 horseImg.style("left", 0);
 
-                const peerHorseTag = d3.select("#peerHorse");
-                const peerHorseImg = peerHorseTag.append("img");
-                peerHorseImg.attr("id", "peerHorseImg");
-                peerHorseImg.attr("src", "./baby_horse_small.jpg");
-                peerHorseImg.style("width", "auto").style("height", 90);
-                peerHorseImg.style("position", "absolute");
-                peerHorseImg.style("bottom", 0);
-                peerHorseImg.style("left", 0);
-
                 horseCreated = true;
-            }
-
-
-            if (!isRemote) {
-                // Notify peer that they need to start their game.
-                currentPeerConn.send(
-                    JSON.stringify(
-                        {
-                            type: "start-game"
-                        }
-                    )
-                )
             }
 
 
@@ -169,7 +52,7 @@
 
                     drawquestion(currentQuestions[0]);
                     drawhorse();
-
+                    updatehungermeter();
                 })
                 .catch(error => {
                     console.error(error);
@@ -201,19 +84,7 @@
             } else {
                 drawquestion(currentQuestions[currentQuestionIndex]);
                 drawhorse();
-
-                // Notify peer that your horse has moved.
-                const newHorsePositions = {};
-                newHorsePositions[peerId] = currentPeerHorsePosition;
-                newHorsePositions[yourId] = currentHorsePosition;
-                currentPeerConn.send(
-                    JSON.stringify(
-                        {
-                            type: "move-horse",
-                            horsePositions: newHorsePositions
-                        }
-                    )
-                )
+                updatehungermeter();
             }
         }
 
@@ -281,12 +152,9 @@
             horseImg.style("left", currentHorsePosition * 100);
         }
 
-        function drawPeerHorse() {
-            const horseTag = d3.select("#peerHorse");
-            const horseImg = horseTag.select("#peerHorseImg");
-
-            // Update the position of the horse.
-            horseImg.style("left", currentPeerHorsePosition * 100);
+        function updatehungermeter() {
+            const hungerMeter = d3.select("#hunger_meter");
+            hungerMeter.style("width", (currentQuestionIndex * (900 / 10)) || 5);
         }
 
         function drawendgame() {
@@ -295,7 +163,8 @@
             d3.selectAll("#answers > *").remove();
             d3.select("#submitanswer").remove();
             gameStarted = false;
-            if (currentHorsePosition == 7) {
+            if (currentHorsePosition == 7)
+            {
                 d3.select("#endGameMessage").html("Congratulations! You made it to the end just in time")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
@@ -303,7 +172,8 @@
                 newImg.style("width", 416)
                 newImg.style("height", "auto")
             }
-            else if (currentHorsePosition < 7) {
+            else if (currentHorsePosition < 7)
+            {
                 d3.select("#endGameMessage").html("Whomp whomp :(  Your horse is still hungry")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
@@ -311,7 +181,8 @@
                 newImg.style("width", 416)
                 newImg.style("height", "auto")
             }
-            else {
+            else 
+            {
                 d3.select("#endGameMessage").html("Wow! You are a superstar! Your horse loves you")
                 d3.select("#endGameMessage").append("br")
                 const newImg = d3.select("#endGameMessage").append("img");
@@ -321,7 +192,7 @@
             }
         }
 
-
+        
         // HACKS BEWARE -------------------------------------------------------
 
         function shuffle(array) {
@@ -331,19 +202,6 @@
 </head>
 
 <body>
-    <div id="toolbar">
-        <input id="peerId" type="text">
-        <button id="connectButton" type="button" onclick="connectPeer()">
-            Connect to Friend
-        </button>
-        Your id:&nbsp;
-        <span id="yourId">
-        </span>
-        &nbsp;&nbsp;
-        Connected to:&nbsp;
-        <span id="currentPeerId">
-        </span>
-    </div>
     <div id="intro">
         Hi There! <br>
         <h1><b>Welcome to Hungry Hungry Horse</b></h1><br>
@@ -365,17 +223,14 @@
     <div id="endGameMessage">
 
     </div>
-    <div id="horse"
-        style="width: 900px; border-style: none none solid none; border-color: brown; position: relative; height: 100px;">
+    <div id="horse" style="width: 900px; border-style: none none solid none; border-color: brown; position: relative; height: 100px;">
         <img src="./grass.jpg" style="width: 100px; height: auto; position: absolute; bottom: 0; right: 0;">
     </div>
-    <div id="peerHorse"
-        style="width: 900px; border-style: none none solid none; border-color: brown; position: relative; height: 100px;">
-        <img src="./grass.jpg" style="width: 100px; height: auto; position: absolute; bottom: 0; right: 0;">
+    
+    <br>
+    <h5 style= "color: black;">Hunger Meter</h5>
+    <div id="hunger_meter" style="width: 5px; height: 50px; background-color: crimson;">
     </div>
-
-
-
 </body>
 
 
